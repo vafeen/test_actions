@@ -57,10 +57,10 @@ jobs:
     - name: Read release notes
       id: get_release_notes
       run: |
-        RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')  # Remove leading '#' if present
-        RELEASE_BODY=$(tail -n +2 release_notes.md)
-        echo "RELEASE_TITLE=\"${RELEASE_TITLE}\"" >> $GITHUB_ENV  # Wrap in quotes
-        echo "RELEASE_BODY=\"${RELEASE_BODY}\"" >> $GITHUB_ENV  # Wrap in quotes
+        RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')
+        RELEASE_BODY=$(tail -n +2 release_notes.md | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g')
+        echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV
+        echo "RELEASE_BODY=${RELEASE_BODY}" >> $GITHUB_ENV
 
     - name: Create GitHub Release
       id: create_release
