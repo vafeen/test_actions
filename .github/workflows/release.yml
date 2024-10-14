@@ -59,16 +59,16 @@ jobs:
       run: |
         RELEASE_TITLE=$(head -n 1 release_notes.md)
         RELEASE_BODY=$(tail -n +2 release_notes.md)
-        echo "title=$RELEASE_TITLE" >> $GITHUB_ENV
-        echo "body=$RELEASE_BODY" >> $GITHUB_ENV
+        echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV
+        echo "RELEASE_BODY=${RELEASE_BODY}" >> $GITHUB_ENV
 
     - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1.1.0
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ env.title }}
-        body: ${{ env.body }}
+        release_name: ${{ env.RELEASE_TITLE }}
+        body: ${{ env.RELEASE_BODY }}
         draft: false
         prerelease: false
       env:
