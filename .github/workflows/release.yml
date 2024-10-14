@@ -64,7 +64,7 @@ jobs:
       id: get_release_notes
       run: |
         RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')  # Remove leading '#' if present
-        RELEASE_BODY=$(tail -n +2 release_notes.md | sed ':a;N;$!ba;s/\n/\\n/g')  # Replace newlines with '\n' for GitHub API
+        RELEASE_BODY=$(tail -n +2 release_notes.md)  # Preserve newlines
         echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV  # No quotes
         echo "RELEASE_BODY=${RELEASE_BODY}" >> $GITHUB_ENV  # No quotes
 
