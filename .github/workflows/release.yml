@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*'
 
+# Setting explicit permissions for the workflow
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   build_and_release:
     runs-on: ubuntu-latest
@@ -57,10 +63,10 @@ jobs:
     - name: Read release notes
       id: get_release_notes
       run: |
-        RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')
-        RELEASE_BODY=$(tail -n +2 release_notes.md | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g')
-        echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV
-        echo "RELEASE_BODY=${RELEASE_BODY}" >> $GITHUB_ENV
+        RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')  # Remove leading '#' if present
+        RELEASE_BODY=$(tail -n +2 release_notes.md | tr '\n' '\\n')  # Replace newlines with '\n'
+        echo "RELEASE_TITLE=\"${RELEASE_TITLE}\"" >> $GITHUB_ENV  # Wrap in quotes
+        echo "RELEASE_BODY=\"${RELEASE_BODY}\"" >> $GITHUB_ENV  # Wrap in quotes
 
     - name: Create GitHub Release
       id: create_release
@@ -72,7 +78,7 @@ jobs:
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Используйте встроенный токен
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this token has the necessary permissions
 
     - name: Upload APK to Release
       uses: actions/upload-release-asset@v1
@@ -81,5 +87,3 @@ jobs:
         asset_path: app-release-aligned.apk
         asset_name: app-release.apk
         asset_content_type: application/vnd.android.package-archive
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Используйте встроенный токен
