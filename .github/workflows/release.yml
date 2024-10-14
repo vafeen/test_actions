@@ -1,89 +1,80 @@
-name: Create Release
+name: Generated APK Release (Upload - Create Artifact To GitHub Action)
+
+env:
+  # The name of the main module repository
+  main_project_module: app
+
+  # The name of the Play Store
+  playstore_name: Frogobox ID
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # Triggers on tags like v1.0, v1.1, etc.
 
-# Setting explicit permissions for the workflow
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-  build_and_release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'zulu'
-        java-version: '17'
+      # Set Current Date As Env Variable
+      - name: Set current date as env variable
+        run: echo "date_today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-    - name: Cache Gradle packages
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          gradle-${{ runner.os }}-
+      # Set Repository Name As Env Variable
+      - name: Set repository name as env variable
+        run: echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
 
-    - name: Build APK
-      run: ./gradlew assembleRelease
+      - name: Set Up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu' # See 'Supported distributions' for available options
+          java-version: '17'
+          cache: 'gradle'
 
-    - name: Install Android SDK tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y zipalign
+      - name: Change wrapper permissions
+        run: chmod +x ./gradlew
 
-    - name: Decode and set up keystore
-      run: |
-        echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > /tmp/keystore.jks
+      # Run Build Project
+      - name: Build gradle project
+        run: ./gradlew build
 
-    - name: Sign APK
-      run: |
-        jarsigner -verbose -keystore /tmp/keystore.jks \
-                  -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
-                  -keypass ${{ secrets.KEY_PASSWORD }} \
-                  -signedjar app-release-signed.apk \
-                  app/build/outputs/apk/release/app-release.apk \
-                  ${{ secrets.KEY_ALIAS }}
+      # Create APK Release
+      - name: Build apk release project (APK) - ${{ env.main_project_module }} module
+        run: ./gradlew assembleRelease
 
-    - name: Align APK
-      run: |
-        zipalign -v 4 app-release-signed.apk app-release-aligned.apk
+      # Read release notes for title and body
+      - name: Read Release Notes
+        id: read_release_notes
+        run: |
+          RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')  # Remove leading '#'
+          RELEASE_BODY=$(tail -n +2 release_notes.md | tr '\n' '\\n')  # Replace newlines with '\n'
+          echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV  # Set title in environment variable
+          echo "RELEASE_BODY=${RELEASE_BODY}" >> $GITHUB_ENV  # Set body in environment variable
 
-    - name: Read release notes
-      id: get_release_notes
-      run: |
-        RELEASE_TITLE=$(head -n 1 release_notes.md | sed 's/^# //')  # Remove leading '#' if present
-        RELEASE_BODY=$(tail -n +2 release_notes.md | tr '\n' '\\n')  # Replace newlines with '\n'
-        echo "RELEASE_TITLE=\"${RELEASE_TITLE}\"" >> $GITHUB_ENV  # Wrap in quotes
-        echo "RELEASE_BODY=\"${RELEASE_BODY}\"" >> $GITHUB_ENV  # Wrap in quotes
+      # Create GitHub Release
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1.1.0
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ env.RELEASE_TITLE }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this token has the necessary permissions
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: actions/create-release@v1.1.0
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ env.RELEASE_TITLE }}
-        body: ${{ env.RELEASE_BODY }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure this token has the necessary permissions
-
-    - name: Upload APK to Release
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: app-release-aligned.apk
-        asset_name: app-release.apk
-        asset_content_type: application/vnd.android.package-archive
+      # Upload APK Release to GitHub Release
+      - name: Upload APK Release to GitHub Release
+        uses: actions/upload-release-asset@v1.0.2
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.main_project_module }}/build/outputs/apk/release/app-release.apk  # Adjust this path if necessary
+          asset_name: app-release.apk
+          asset_content_type: application/vnd.android.package-archive
