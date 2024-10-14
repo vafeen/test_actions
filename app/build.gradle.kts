@@ -6,15 +6,15 @@ plugins {
 }
 
 android {
-    namespace = "ru.vafeen.universityschedule"
+    namespace = "ru.vafeen.test_actions"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "ru.vafeen.universityschedule"
+        applicationId = "ru.vafeen.test_actions"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = "3.6"
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

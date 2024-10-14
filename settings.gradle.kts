@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "University schedule"
+rootProject.name = "Test actions"
 include(":app")
  
