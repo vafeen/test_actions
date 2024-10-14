@@ -43,7 +43,7 @@ jobs:
 
     - name: Sign APK using apksigner
       run: |
-        /home/a/Android/Sdk/build-tools/35.0.0/apksigner sign \
+        /home/runner/Android/Sdk/build-tools/35.0.0/apksigner sign \
           --ks /tmp/keystore.jks \
           --ks-key-alias ${{ secrets.KEY_ALIAS }} \
           --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
